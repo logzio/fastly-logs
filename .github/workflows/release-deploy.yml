@@ -2,7 +2,7 @@ name: Deploy to AWS Lambda on Release
 
 on:
   release:
-    types: [published]
+    types: [published, prereleased]
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
@@ -57,6 +57,9 @@ jobs:
         aws lambda update-function-code \
           --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME }} \
           --zip-file fileb://lambda_function.zip
+        
+        # Wait for the update to complete
+        aws lambda wait function-updated --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME }}
           
         # Update Lambda function configuration
         aws lambda update-function-configuration \
