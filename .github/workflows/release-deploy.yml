@@ -18,6 +18,8 @@ jobs:
     - uses: actions/checkout@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        ref: ${{ github.event.release.target_commitish }}
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -39,9 +41,14 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        
+        # Get current branch name
+        BRANCH_NAME=$(git symbolic-ref --short HEAD || echo "${GITHUB_REF_NAME}")
+        echo "Using branch: $BRANCH_NAME"
+        
         git add version.py
         git commit -m "Update version to ${{ env.VERSION }}" || echo "No changes to commit"
-        git push
+        git push origin HEAD:$BRANCH_NAME
         
     - name: Install dependencies
       run: |
