@@ -11,6 +11,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v3
@@ -32,6 +34,14 @@ jobs:
       run: |
         echo '"""Version information."""' > version.py
         echo '__version__ = "${{ env.VERSION }}"' >> version.py
+        
+    - name: Commit version file
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add version.py
+        git commit -m "Update version to ${{ env.VERSION }}" || echo "No changes to commit"
+        git push
         
     - name: Install dependencies
       run: |
