@@ -38,7 +38,7 @@ def get_user_config(query_params: Dict) -> Dict:
     
     Returns a configuration dictionary:
     {
-        'fastly_service_ids': ['SERVICE_ID_1', 'SERVICE_ID_2'],  # List of service IDs
+        'fastly_service_id': 'SERVICE_ID',                      # User's Fastly service ID
         'logzio_token': 'USER_TOKEN',                           # User's Logz.io token
         'logzio_listener_host': 'listener.logz.io',             # User's Logz.io listener host
         'logzio_type': 'user_log_type',                         # User's log type
