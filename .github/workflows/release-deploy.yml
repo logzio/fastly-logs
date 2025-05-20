@@ -15,16 +15,16 @@ jobs:
       contents: write
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
         ref: ${{ github.event.release.target_commitish }}
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.11'
         
     - name: Extract version from tag
       run: |
@@ -62,7 +62,7 @@ jobs:
         zip -j lambda_function.zip lambda_function.py version.py
         
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -81,4 +81,5 @@ jobs:
         # Update Lambda function configuration
         aws lambda update-function-configuration \
           --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME }} \
-          --description "Fastly Logs Lambda v${{ env.VERSION }}" 
+          --description "Fastly Logs Lambda v${{ env.VERSION }}" \
+          --runtime python3.11 

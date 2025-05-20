@@ -62,15 +62,6 @@ class TestLambdaFunction(unittest.TestCase):
         with self.assertRaises(lambda_function.ConfigurationError):
             lambda_function.get_user_config({})
 
-
-
-    def test_mask_sensitive_data(self):
-        """Test mask_sensitive_data function."""
-        self.assertEqual(lambda_function.mask_sensitive_data(''), '')
-        self.assertEqual(lambda_function.mask_sensitive_data('abc'), '****')
-        self.assertEqual(lambda_function.mask_sensitive_data('abcdef'), 'abcd**')
-        self.assertEqual(lambda_function.mask_sensitive_data('abcdefghij'), 'abcd******')
-
     def test_calculate_sha256_hash(self):
         """Test calculate_sha256_hash function."""
         service_id = 'test-id'

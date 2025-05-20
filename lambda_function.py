@@ -1,9 +1,7 @@
 import base64
-import gzip
 import hashlib
 import json
 import logging
-import os
 import time
 import urllib.request
 import urllib.error
@@ -11,7 +9,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from version import __version__
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.INFO)  
 
 # Constants
 HEALTH_CHECK_PATH = "/.well-known/fastly/logging/challenge"
@@ -20,17 +18,10 @@ MAX_RETRIES = 2
 RETRY_DELAY_SECONDS = 2
 RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
 USER_AGENT = f"fastly-logs-{__version__}"
-DEBUG_PREFIX = "🔍 DEBUG 🔍"
 
 class ConfigurationError(Exception):
     """Raised when there's an issue with user configuration."""
     pass
-
-def mask_sensitive_data(data: str) -> str:
-    """Mask sensitive data for logging purposes."""
-    if not data:
-        return data
-    return data[:4] + '*' * (len(data) - 4) if len(data) > 4 else '****'
 
 def get_user_config(query_params: Dict) -> Dict:
     """
@@ -86,11 +77,6 @@ def get_user_config(query_params: Dict) -> Dict:
         'debug': debug
     }
 
-def log_debug(config: Dict, message: str, *args) -> None:
-    """Conditional debug logging based on user configuration."""
-    if config.get('debug', False):
-        logger.info(f"{DEBUG_PREFIX} {message}", *args)
-
 def calculate_sha256_hash(service_id: str) -> str:
     """Calculate SHA256 hash for given service ID."""
     hash_obj = hashlib.sha256(service_id.encode())
@@ -110,7 +96,6 @@ def get_logzio_url(config: Dict) -> str:
 def _attempt_logzio_forward(url: str, body: Union[str, bytes], headers: Dict[str, str]) -> Tuple[int, str]:
     """Helper function to make a single attempt to forward logs to Logz.io."""
     try:
-        headers['User-Agent'] = USER_AGENT
         req = urllib.request.Request(
             url,
             data=body if isinstance(body, bytes) else body.encode('utf-8'),
@@ -129,7 +114,8 @@ def forward_to_logzio(body: Union[str, bytes], is_gzipped: bool, config: Dict) -
     """Forward logs to Logz.io with retry mechanism."""
     url = get_logzio_url(config)
     headers = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': USER_AGENT
     }
     
     if is_gzipped:
@@ -176,7 +162,7 @@ def handle_health_check(query_params: Dict) -> Dict:
         service_id = user_config['fastly_service_id']
         response_body = calculate_sha256_hash(service_id)
         
-        log_debug(user_config, f"Health check response for service_id {service_id}: {response_body}")
+        logger.debug(f"Health check response for service_id {service_id}: {response_body}")
         
         return {
             'statusCode': 200,
@@ -211,11 +197,11 @@ def handle_logs(event: Dict, query_params: Dict) -> Dict:
         is_gzipped = headers.get('content-encoding', '').lower() == 'gzip'
         
         # Debug logging
-        log_debug(user_config, "Request details:")
-        log_debug(user_config, f"Headers: {json.dumps(headers)}")
-        log_debug(user_config, f"Is Base64: {is_base64}")
-        log_debug(user_config, f"Is Gzipped: {is_gzipped}")
-        log_debug(user_config, f"First 500 chars of body: {body[:500]}")
+        logger.debug("Request details:")
+        logger.debug(f"Headers: {json.dumps(headers)}")
+        logger.debug(f"Is Base64: {is_base64}")
+        logger.debug(f"Is Gzipped: {is_gzipped}")
+        logger.debug(f"First 500 chars of body: {body[:500]}")
         
         # Log request details
         logger.info(
@@ -227,19 +213,19 @@ def handle_logs(event: Dict, query_params: Dict) -> Dict:
         # Handle base64 encoded body
         if is_base64:
             body = base64.b64decode(body)
-            log_debug(user_config, "Decoded base64 body")
+            logger.debug("Decoded base64 body")
         elif is_gzipped:
             # If gzipped but not base64 encoded, encode to bytes
             body = body.encode('utf-8')
-            log_debug(user_config, "Encoded body to bytes for gzip handling")
+            logger.debug("Encoded body to bytes for gzip handling")
         
         # Forward to Logz.io
         status_code, response_body = forward_to_logzio(body, is_gzipped, user_config)
         
-        # Log the result (masking sensitive data)
+        # Log the result
         if 200 <= status_code < 300:
             logger.info(f"Successfully forwarded logs to Logz.io for service ID: {user_config['fastly_service_id']}")
-            log_debug(user_config, f"Logz.io response: {response_body}")
+            logger.debug(f"Logz.io response: {response_body}")
         else:
             logger.error(
                 f"Failed to forward logs to Logz.io. Status: {status_code}, "
@@ -273,16 +259,19 @@ def handle_logs(event: Dict, query_params: Dict) -> Dict:
 def lambda_handler(event: Dict, context: Dict) -> Dict:
     """Main Lambda handler."""
     try:
-        # Get the query parameters
         query_params = event.get('queryStringParameters', {}) or {}
         
-        # Log the raw event and query parameters at the start
+        # Log the raw query string at the start
         logger.info(f"Raw query string: {event.get('rawQueryString', 'NONE')}")
         
-        # Debug log if debug is enabled in query params
-        if query_params.get('debug', '').lower() == 'true':
-            logger.info(f"{DEBUG_PREFIX} Raw event: {json.dumps(event)}")
-            logger.info(f"{DEBUG_PREFIX} Query parameters: {json.dumps(query_params)}")
+        # Configure logging based on debug parameter 
+        debug = query_params.get('debug', '').lower() == 'true'
+        if debug:
+            logger.setLevel(logging.DEBUG)
+            logger.debug(f"Raw event: {json.dumps(event)}")
+            logger.debug(f"Query parameters: {json.dumps(query_params)}")
+        else:
+            logger.setLevel(logging.INFO)
         
         # Get the request path
         path = event.get('rawPath', '')

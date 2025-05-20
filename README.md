@@ -26,13 +26,47 @@ Before creating your Fastly endpoint, review the [URL Parameters Reference](#url
 | JSON log entry format | Use newline-delimited JSON |
 | Request Compression | Gzip (optional but recommended) |
 
-### 3. Use This JSON Log Format
+### 3. Configure Your Log Format
 
-Copy and paste this log format into your Fastly HTTPS endpoint configuration:
+The Lambda function is format-agnostic. Below is an example of a comprehensive log format that includes common fields, but you can customize it based on your needs:
 
 ```json
 {"@timestamp":"%{begin:%Y-%m-%dT%H:%M:%SZ}t","time_elapsed_msec":"%{time.elapsed.msec}V","is_tls":"%{if(req.is_ssl, \"true\", \"false\")}V","client_ip":"%h","message":"%m %U returned %>s for %h on %v in %{time.elapsed.msec}Vms (UA: %{User-Agent}i, Cache: %{fastly_info.state}V)" ,"client_geo_city":"%{client.geo.city}V","client_geo_country_code":"%{client.geo.country_code}V","client_geo_continent_code":"%{client.geo.continent_code}V","client_geo_region":"%{client.geo.region}V","http_host":"%v","http_method":"%m","http_url":"%U","http_protocol":"%H","http_status_code":"%>s","http_referer":"%{Referer}i","http_user_agent":"%{User-Agent}i","bytes_received_from_client":"%I","bytes_sent_to_client":"%O","resp_content_type":"%{Content-Type}o","fastly_service_id":"%{req.service_id}V","fastly_service_version":"%{req.vcl.version}V","fastly_pop":"%{server.identity}V","fastly_region":"%{server.region}V","fastly_cache_status":"%{fastly_info.state}V","fastly_is_h2":"%{if(fastly_info.is_h2, \"true\", \"false\")}V","fastly_is_h3":"%{if(fastly_info.is_h3, \"true\", \"false\")}V","tls_client_protocol":"%{tls.client.protocol}V","tls_client_cipher":"%{tls.client.cipher}V","tls_client_ciphers_sha":"%{tls.client.ciphers_sha}V","tls_client_iana_chosen_cipher_id":"%{tls.client.iana_chosen_cipher_id}V","fastly_error_details":"%{fastly.error}V"}
 ```
+
+#### Customizing Your Log Format
+
+You can customize the log format to include only the fields you need. The Lambda function will forward whatever JSON structure you define. Here are some tips for customization:
+
+1. **Required Fields for Logz.io**:
+   - `@timestamp` - Required for proper log indexing and time-based queries
+   - `type` - Will be set automatically based on the `type` parameter in your URL (default: `fastly-logs`)
+   - `message` - A human-readable log message (recommended for better log readability)
+
+2. **Recommended Fields for Fastly**:
+   - `fastly_service_id` - For service identification
+   - `fastly_service_version` - For version tracking
+   - `fastly_pop` - Point of Presence information
+   - `fastly_region` - Geographic region information
+
+3. **Common Fields to Consider**:
+   - HTTP method, URL, and status code
+   - Client IP and geo information
+   - Response time and cache status
+   - Error details if applicable
+
+4. **Format Options**:
+   - Use Fastly's VCL variables (prefixed with `%{...}V`)
+   - Include request headers (prefixed with `%{...}i`)
+   - Add response headers (prefixed with `%{...}o`)
+   - Use standard format specifiers (like `%h` for client IP)
+
+5. **Logz.io Best Practices**:
+   - Ensure timestamps are in ISO 8601 format (e.g., `%{begin:%Y-%m-%dT%H:%M:%SZ}t`)
+   - Use consistent field names across your logging
+   - Consider using Logz.io's field naming conventions for better integration
+
+For more information about available Fastly logging variables, refer to the [Fastly VCL Variables documentation](https://developer.fastly.com/reference/vcl/variables/).
 
 ### 4. Complete the URL Parameters
 
@@ -98,7 +132,6 @@ The Lambda function handles two types of requests:
 ### Error Handling
 
 - The function implements a retry mechanism for transient failures
-- It masks sensitive data (like tokens) in logs
 - All errors are logged to CloudWatch for monitoring
 - Even on downstream errors, the function returns 200 to Fastly to prevent retry storms
 
@@ -173,7 +206,7 @@ The Lambda function requires an IAM role with the following policies:
 
 - Monitor the Lambda function's CloudWatch Logs for execution details and errors
 - Debug Mode: To enable detailed debug logging, add `debug=true` to your query parameters
-- Debug logs are prefixed with `🔍 DEBUG 🔍` for easy visibility
+- Setting `debug=true` changes the logger level to DEBUG, showing more detailed logs
 - Logs include the service ID for easy filtering
 - Check CloudWatch Metrics for Lambda execution time, memory usage, and error rates
 
@@ -199,6 +232,5 @@ deactivate
    - Support for Fastly health check mechanism
    - Log forwarding to Logz.io
    - Support for gzipped and uncompressed logs
-
    - Debug mode
    - Retry mechanism for transient failures 
