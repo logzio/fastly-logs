@@ -11,7 +11,6 @@ from version import __version__
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  
 
-# Constants
 HEALTH_CHECK_PATH = "/.well-known/fastly/logging/challenge"
 LOGZIO_PORT = 8071
 MAX_RETRIES = 2
@@ -45,12 +44,10 @@ def get_user_config(query_params: Dict) -> Dict:
         'debug': False                                          # Debug mode flag
     }
     """
-    # Extract required parameters
     service_id = query_params.get('service_id', '').strip()
     token = query_params.get('token')
     host = query_params.get('host')
     
-    # Validate required parameters
     missing_params = []
     if not service_id:
         missing_params.append('service_id')
@@ -62,7 +59,6 @@ def get_user_config(query_params: Dict) -> Dict:
     if missing_params:
         raise ConfigurationError(f"Missing required parameters: {', '.join(missing_params)}")
     
-    # Extract optional parameters with defaults
     log_type = query_params.get('type', 'fastly-logs')
     debug = query_params.get('debug', '').lower() == 'true'
     
