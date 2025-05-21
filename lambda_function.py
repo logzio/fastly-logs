@@ -5,7 +5,7 @@ import logging
 import time
 import urllib.request
 import urllib.error
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
 from version import __version__
 
 logger = logging.getLogger()
@@ -33,7 +33,6 @@ def get_user_config(query_params: Dict) -> Dict:
     
     Optional query parameters:
     - type: The Logz.io log type (default: fastly-logs)
-    - debug: Enable debug logging if set to 'true'
     
     Returns a configuration dictionary:
     {
@@ -41,7 +40,6 @@ def get_user_config(query_params: Dict) -> Dict:
         'logzio_token': 'USER_TOKEN',                           # User's Logz.io token
         'logzio_listener_host': 'listener.logz.io',             # User's Logz.io listener host
         'logzio_type': 'user_log_type',                         # User's log type
-        'debug': False                                          # Debug mode flag
     }
     """
     service_id = query_params.get('service_id', '').strip()
@@ -60,14 +58,12 @@ def get_user_config(query_params: Dict) -> Dict:
         raise ConfigurationError(f"Missing required parameters: {', '.join(missing_params)}")
     
     log_type = query_params.get('type', 'fastly-logs')
-    debug = query_params.get('debug', '').lower() == 'true'
     
     return {
         'fastly_service_id': service_id,
         'logzio_token': token,
         'logzio_listener_host': host,
-        'logzio_type': log_type,
-        'debug': debug
+        'logzio_type': log_type
     }
 
 def calculate_sha256_hash(service_id: str) -> str:
@@ -79,8 +75,16 @@ def get_logzio_url(config: Dict) -> str:
     token = config.get('logzio_token')
     log_type = config.get('logzio_type')
     
-    if not all([host, token, log_type]):
-        raise ConfigurationError("Missing required Logz.io configuration")
+    missing_params = []
+    if not host:
+        missing_params.append('logzio_listener_host')
+    if not token:
+        missing_params.append('logzio_token')
+    if not log_type:
+        missing_params.append('logzio_type')
+    
+    if missing_params:
+        raise ConfigurationError(f"Missing required Logz.io configuration: {', '.join(missing_params)}")
     
     return f"https://{host}:{LOGZIO_PORT}?token={token}&type={log_type}"
 

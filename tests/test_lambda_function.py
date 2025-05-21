@@ -51,7 +51,6 @@ class TestLambdaFunction(unittest.TestCase):
         self.assertEqual(config['logzio_token'], 'test-token')
         self.assertEqual(config['logzio_listener_host'], 'test-host.logz.io')
         self.assertEqual(config['logzio_type'], 'test-logs')
-        self.assertTrue(config['debug'])
 
     def test_get_user_config_with_missing_params(self):
         with self.assertRaises(lambda_function.ConfigurationError):
