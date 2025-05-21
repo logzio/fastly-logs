@@ -7,11 +7,8 @@ from version import __version__
 
 
 class TestLambdaFunction(unittest.TestCase):
-    """Test cases for the lambda_function module."""
 
     def setUp(self):
-        """Set up test fixtures."""
-        # Sample event data
         self.sample_query_params = {
             'service_id': 'test-service-id',
             'token': 'test-token',
@@ -48,7 +45,6 @@ class TestLambdaFunction(unittest.TestCase):
         }
 
     def test_get_user_config_with_valid_params(self):
-        """Test get_user_config with valid parameters."""
         config = lambda_function.get_user_config(self.sample_query_params)
         
         self.assertEqual(config['fastly_service_id'], 'test-service-id')
@@ -58,19 +54,16 @@ class TestLambdaFunction(unittest.TestCase):
         self.assertTrue(config['debug'])
 
     def test_get_user_config_with_missing_params(self):
-        """Test get_user_config with missing parameters."""
         with self.assertRaises(lambda_function.ConfigurationError):
             lambda_function.get_user_config({})
 
     def test_calculate_sha256_hash(self):
-        """Test calculate_sha256_hash function."""
         service_id = 'test-id'
         expected_hash = '6cc41d5ec590ab78cccecf81ef167d418c309a4598e8e45fef78039f7d9aa9fe\n'
         result = lambda_function.calculate_sha256_hash(service_id)
         self.assertEqual(result, expected_hash)
 
     def test_get_logzio_url(self):
-        """Test get_logzio_url function."""
         config = {
             'logzio_listener_host': 'test-host.logz.io',
             'logzio_token': 'test-token',
@@ -83,7 +76,6 @@ class TestLambdaFunction(unittest.TestCase):
     @patch('lambda_function.urllib.request.Request')
     @patch('lambda_function.urllib.request.urlopen')
     def test_forward_to_logzio_success(self, mock_urlopen, mock_request):
-        """Test forward_to_logzio with successful response."""
         mock_response = MagicMock()
         mock_response.status = 200
         mock_response.read.return_value = b'Success'
@@ -107,7 +99,6 @@ class TestLambdaFunction(unittest.TestCase):
     @patch('lambda_function.urllib.request.urlopen')
     @patch('time.sleep')
     def test_forward_to_logzio_retry(self, mock_sleep, mock_urlopen, mock_request):
-        """Test forward_to_logzio retry mechanism."""
         # First call raises 503 error
         mock_error_response = MagicMock()
         mock_error_response.code = 503
@@ -142,7 +133,6 @@ class TestLambdaFunction(unittest.TestCase):
 
     @patch('lambda_function.handle_health_check')
     def test_lambda_handler_health_check(self, mock_health_check):
-        """Test lambda_handler with health check request."""
         mock_health_check.return_value = {'statusCode': 200}
         
         result = lambda_function.lambda_handler(self.health_check_event, {})
@@ -152,7 +142,6 @@ class TestLambdaFunction(unittest.TestCase):
 
     @patch('lambda_function.handle_logs')
     def test_lambda_handler_log_forwarding(self, mock_handle_logs):
-        """Test lambda_handler with log forwarding request."""
         mock_handle_logs.return_value = {'statusCode': 200}
         
         result = lambda_function.lambda_handler(self.sample_event, {})
@@ -162,7 +151,6 @@ class TestLambdaFunction(unittest.TestCase):
 
     @patch('lambda_function.forward_to_logzio')
     def test_handle_logs_success(self, mock_forward):
-        """Test handle_logs with successful forwarding."""
         mock_forward.return_value = (200, 'Success')
         
         result = lambda_function.handle_logs(self.sample_event, self.sample_query_params)
@@ -171,7 +159,6 @@ class TestLambdaFunction(unittest.TestCase):
         mock_forward.assert_called_once()
 
     def test_handle_health_check_success(self):
-        """Test handle_health_check with valid parameters."""
         result = lambda_function.handle_health_check(self.sample_query_params)
         
         self.assertEqual(result['statusCode'], 200)
@@ -179,7 +166,6 @@ class TestLambdaFunction(unittest.TestCase):
         self.assertTrue(result['body'])  # Should contain SHA256 hash
 
     def test_handle_health_check_error(self):
-        """Test handle_health_check with invalid parameters."""
         result = lambda_function.handle_health_check({})
         
         self.assertEqual(result['statusCode'], 400)

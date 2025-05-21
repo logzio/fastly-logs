@@ -78,12 +78,10 @@ def get_user_config(query_params: Dict) -> Dict:
     }
 
 def calculate_sha256_hash(service_id: str) -> str:
-    """Calculate SHA256 hash for given service ID."""
     hash_obj = hashlib.sha256(service_id.encode())
     return hash_obj.hexdigest() + '\n'
 
 def get_logzio_url(config: Dict) -> str:
-    """Construct Logz.io URL from user configuration."""
     host = config.get('logzio_listener_host')
     token = config.get('logzio_token')
     log_type = config.get('logzio_type')
@@ -111,7 +109,6 @@ def _attempt_logzio_forward(url: str, body: Union[str, bytes], headers: Dict[str
         return 0, str(e)
 
 def forward_to_logzio(body: Union[str, bytes], is_gzipped: bool, config: Dict) -> Tuple[int, str]:
-    """Forward logs to Logz.io with retry mechanism."""
     url = get_logzio_url(config)
     headers = {
         'Content-Type': 'application/json',
@@ -156,7 +153,6 @@ def forward_to_logzio(body: Union[str, bytes], is_gzipped: bool, config: Dict) -
     return last_status, last_response
 
 def handle_health_check(query_params: Dict) -> Dict:
-    """Handle Fastly health check requests."""
     try:
         user_config = get_user_config(query_params)
         service_id = user_config['fastly_service_id']
@@ -187,16 +183,13 @@ def handle_health_check(query_params: Dict) -> Dict:
 def handle_logs(event: Dict, query_params: Dict) -> Dict:
     """Handle log forwarding from Fastly to Logz.io."""
     try:
-        # Get user configuration
         user_config = get_user_config(query_params)
         
-        # Get the request body and check if it's gzipped
         body = event.get('body', '')
         is_base64 = event.get('isBase64Encoded', False)
         headers = {k.lower(): v for k, v in event.get('headers', {}).items()}
         is_gzipped = headers.get('content-encoding', '').lower() == 'gzip'
         
-        # Debug logging
         logger.debug("Request details:")
         logger.debug(f"Headers: {json.dumps(headers)}")
         logger.debug(f"Is Base64: {is_base64}")
@@ -210,19 +203,15 @@ def handle_logs(event: Dict, query_params: Dict) -> Dict:
             f"Service ID={user_config['fastly_service_id']}"
         )
         
-        # Handle base64 encoded body
         if is_base64:
             body = base64.b64decode(body)
             logger.debug("Decoded base64 body")
         elif is_gzipped:
-            # If gzipped but not base64 encoded, encode to bytes
             body = body.encode('utf-8')
             logger.debug("Encoded body to bytes for gzip handling")
         
-        # Forward to Logz.io
         status_code, response_body = forward_to_logzio(body, is_gzipped, user_config)
         
-        # Log the result
         if 200 <= status_code < 300:
             logger.info(f"Successfully forwarded logs to Logz.io for service ID: {user_config['fastly_service_id']}")
             logger.debug(f"Logz.io response: {response_body}")
@@ -241,7 +230,6 @@ def handle_logs(event: Dict, query_params: Dict) -> Dict:
         
     except ConfigurationError as e:
         logger.error(f"Configuration error processing logs: {str(e)}")
-        # Still return 200 to Fastly
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'text/plain'},
@@ -249,7 +237,6 @@ def handle_logs(event: Dict, query_params: Dict) -> Dict:
         }
     except Exception as e:
         logger.error(f"Error processing logs: {str(e)}")
-        # Still return 200 to Fastly
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'text/plain'},
@@ -261,10 +248,8 @@ def lambda_handler(event: Dict, context: Dict) -> Dict:
     try:
         query_params = event.get('queryStringParameters', {}) or {}
         
-        # Log the raw query string at the start
         logger.info(f"Raw query string: {event.get('rawQueryString', 'NONE')}")
         
-        # Configure logging based on debug parameter 
         debug = query_params.get('debug', '').lower() == 'true'
         if debug:
             logger.setLevel(logging.DEBUG)
@@ -273,14 +258,11 @@ def lambda_handler(event: Dict, context: Dict) -> Dict:
         else:
             logger.setLevel(logging.INFO)
         
-        # Get the request path
         path = event.get('rawPath', '')
         
-        # Handle health check
         if path == HEALTH_CHECK_PATH and event.get('requestContext', {}).get('http', {}).get('method') == 'GET':
             return handle_health_check(query_params)
         
-        # Handle log forwarding
         if event.get('requestContext', {}).get('http', {}).get('method') == 'POST':
             return handle_logs(event, query_params)
         

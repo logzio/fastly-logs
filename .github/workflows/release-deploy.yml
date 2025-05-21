@@ -42,7 +42,6 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
-        # Get current branch name
         BRANCH_NAME=$(git symbolic-ref --short HEAD || echo "${GITHUB_REF_NAME}")
         echo "Using branch: $BRANCH_NAME"
         
@@ -58,7 +57,6 @@ jobs:
         
     - name: Create deployment package
       run: |
-        # Create zip file containing the lambda function and dependencies
         zip -j lambda_function.zip lambda_function.py version.py
         
     - name: Configure AWS credentials
@@ -70,15 +68,12 @@ jobs:
         
     - name: Deploy to Lambda
       run: |
-        # Update Lambda function code
         aws lambda update-function-code \
           --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME }} \
           --zip-file fileb://lambda_function.zip
         
-        # Wait for the update to complete
         aws lambda wait function-updated --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME }}
           
-        # Update Lambda function configuration
         aws lambda update-function-configuration \
           --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME }} \
           --description "Fastly Logs Lambda v${{ env.VERSION }}" \
