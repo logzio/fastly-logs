@@ -39,32 +39,33 @@ The Lambda function is format-agnostic. Below is an example of a comprehensive l
 You can customize the log format to include only the fields you need. The Lambda function will forward whatever JSON structure you define. Here are some tips for customization:
 
 1. **Required Fields for Logz.io**:
-   - `@timestamp` - Required for proper log indexing and time-based queries
-   - `type` - Will be set automatically based on the `type` parameter in your URL (default: `fastly-logs`)
+   - `@timestamp` - Required for proper log indexing, must be in ISO 8601 format (e.g., `%{begin:%Y-%m-%dT%H:%M:%SZ}t`)
    - `message` - A human-readable log message (recommended for better log readability)
 
-2. **Recommended Fields for Fastly**:
-   - `fastly_service_id` - For service identification
-   - `fastly_service_version` - For version tracking
-   - `fastly_pop` - Point of Presence information
-   - `fastly_region` - Geographic region information
+2. **Important Note About Service ID**:
+   - While you provide the `service_id` as a URL parameter, this is only used by the Lambda for processing
+   - The service ID is NOT automatically added to the logs sent to Logz.io
+   - If you want to see or filter by service ID in Logz.io, you must include it in your Fastly log format (e.g., `%{req.service_id}V`)
 
-3. **Common Fields to Consider**:
+3. **Optional Fastly Fields to Consider**:
+   - `fastly_service_id` - For service identification in Logz.io (`%{req.service_id}V`)
+   - `fastly_service_version` - For version tracking (`%{req.vcl.version}V`)
+   - `fastly_pop` - Point of Presence information (`%{server.identity}V`)
+   - `fastly_region` - Geographic region information (`%{server.region}V`)
+   - `fastly_cache_status` - Cache hit/miss status (`%{fastly_info.state}V`)
+
+4. **Common Fields to Consider**:
    - HTTP method, URL, and status code
    - Client IP and geo information
-   - Response time and cache status
+   - Response time
    - Error details if applicable
 
-4. **Format Options**:
+5. **Format Options**:
    - Use Fastly's VCL variables (prefixed with `%{...}V`)
    - Include request headers (prefixed with `%{...}i`)
    - Add response headers (prefixed with `%{...}o`)
    - Use standard format specifiers (like `%h` for client IP)
-
-5. **Logz.io Best Practices**:
-   - Ensure timestamps are in ISO 8601 format (e.g., `%{begin:%Y-%m-%dT%H:%M:%SZ}t`)
    - Use consistent field names across your logging
-   - Consider using Logz.io's field naming conventions for better integration
 
 For more information about available Fastly logging variables, refer to the [Fastly VCL Variables documentation](https://developer.fastly.com/reference/vcl/variables/).
 
