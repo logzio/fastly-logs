@@ -46,7 +46,7 @@ def get_user_config(query_params: Dict) -> Dict:
     }
     """
     # Extract required parameters
-    service_id = query_params.get('service_id')
+    service_id = query_params.get('service_id', '').strip()
     token = query_params.get('token')
     host = query_params.get('host')
     
@@ -65,9 +65,6 @@ def get_user_config(query_params: Dict) -> Dict:
     # Extract optional parameters with defaults
     log_type = query_params.get('type', 'fastly-logs')
     debug = query_params.get('debug', '').lower() == 'true'
-    
-    # Use service ID directly
-    service_id = service_id.strip()
     
     return {
         'fastly_service_id': service_id,
@@ -140,11 +137,10 @@ def forward_to_logzio(body: Union[str, bytes], is_gzipped: bool, config: Dict) -
             
         # For server errors or network issues that we want to retry
         if status_code in RETRYABLE_STATUS_CODES or status_code == 0:
-            if attempt <= MAX_RETRIES:
-                logger.warning(f"Retryable error from Logz.io: Status {status_code}, Response: {response_body}")
-                logger.info(f"Waiting {RETRY_DELAY_SECONDS} seconds before retry...")
-                time.sleep(RETRY_DELAY_SECONDS)
-                continue
+            logger.warning(f"Retryable error from Logz.io: Status {status_code}, Response: {response_body}")
+            logger.info(f"Waiting {RETRY_DELAY_SECONDS} seconds before retry...")
+            time.sleep(RETRY_DELAY_SECONDS)
+            continue
                 
         break
     
@@ -228,13 +224,6 @@ def handle_logs(event: Dict, query_params: Dict) -> Dict:
             'body': 'OK'
         }
         
-    except ConfigurationError as e:
-        logger.error(f"Configuration error processing logs: {str(e)}")
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'text/plain'},
-            'body': 'OK'
-        }
     except Exception as e:
         logger.error(f"Error processing logs: {str(e)}")
         return {
