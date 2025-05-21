@@ -103,6 +103,7 @@ def _attempt_logzio_forward(url: str, body: Union[str, bytes], headers: Dict[str
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode('utf-8')
     except Exception as e:
+        logger.error(f"Unexpected error occurred in _attempt_logzio_forward: {type(e).__name__}: {str(e)}")
         return 0, str(e)
 
 def forward_to_logzio(body: Union[str, bytes], is_gzipped: bool, config: Dict) -> Tuple[int, str]:
