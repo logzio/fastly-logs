@@ -17,7 +17,7 @@ Before creating your Fastly endpoint, review the [URL Parameters Reference](#url
 | Setting | Value |
 |---------|-------|
 | Name | `Logz.io Logs` (or any name you prefer) |
-| URL | `https://s9o4regaob.execute-api.us-east-1.amazonaws.com/?service_id=YOUR_SERVICE_ID&token=YOUR_LOGZIO_TOKEN&host=YOUR_LOGZIO_HOST` |
+| URL | `https://fastly.listener-logz.io/?service_id=YOUR_SERVICE_ID&token=YOUR_LOGZIO_TOKEN&host=YOUR_LOGZIO_HOST` |
 | Method | `POST` |
 | Format Version | `2` |
 | Response Condition | Leave empty |
@@ -74,7 +74,7 @@ For more information about available Fastly logging variables, refer to the [Fas
 Your URL should include the following required parameters:
 
 ```
-https://s9o4regaob.execute-api.us-east-1.amazonaws.com/?service_id=YOUR_SERVICE_ID&token=YOUR_LOGZIO_TOKEN&host=YOUR_LOGZIO_HOST
+https://fastly.listener-logz.io/?service_id=YOUR_SERVICE_ID&token=YOUR_LOGZIO_TOKEN&host=YOUR_LOGZIO_HOST
 ```
 
 Replace:
